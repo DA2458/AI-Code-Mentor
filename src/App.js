@@ -153,7 +153,100 @@ const CodeMentor = () => {
         });
       }
     }
-    
+
+    if (lang === 'c' || lang === 'cpp') {
+      // Missing semicolon
+      const lines = code.split('\n');
+      lines.forEach((line, idx) => {
+        const trimmed = line.trim();
+        if (trimmed && 
+          !trimmed.endsWith(';') && 
+          !trimmed.endsWith('{') && 
+          !trimmed.endsWith('}') &&
+          !trimmed.startsWith('#') &&
+          !trimmed.startsWith('//') &&
+          !trimmed.includes('if') &&
+          !trimmed.includes('for') &&
+          !trimmed.includes('while')) {
+          issues.push({
+            type: 'syntax',
+            severity: 'high',
+            line: idx + 1,
+            message: 'Missing semicolon',
+            explanation: 'In C/C++, most statements must end with a semicolon. Did you forget one here?'
+          });
+        }
+      });
+
+      // Array access without bounds checking
+      if (code.match(/\w+\[\w+\]/) && !code.includes('if') && !code.includes('while')) {
+        issues.push({
+          type: 'logic',
+          severity: 'medium',
+          line: 1,
+          message: 'Potential array bounds violation',
+          explanation: 'Are you checking if the index is within valid bounds? Accessing outside array bounds causes undefined behavior in C/C++.'
+        });
+      }
+
+      // Memory leak detection
+      if ((code.includes('malloc') || code.includes('new')) && !code.includes('free') && !code.includes('delete')) {
+        issues.push({
+          type: 'logic',
+          severity: 'high',
+          line: code.split('\n').findIndex(l => l.includes('malloc') || l.includes('new')) + 1,
+          message: 'Potential memory leak',
+          explanation: 'You allocated memory but never freed it. Every malloc() needs a free(), and every new needs a delete.'
+        });
+      }
+
+      // Uninitialized variable
+      if (code.match(/int\s+\w+;/) || code.match(/float\s+\w+;/)) {
+        issues.push({
+          type: 'logic',
+          severity: 'medium',
+          line: 1,
+          message: 'Potentially uninitialized variable',
+          explanation: 'In C/C++, variables are not automatically initialized. Always assign a value before using it.'
+        });
+      }
+  }
+
+    if (lang === 'csharp') {
+      // Null reference
+      if (code.includes('.') && !code.includes('if') && !code.includes('?.')) {
+        issues.push({
+          type: 'logic',
+          severity: 'medium',
+          line: 1,
+          message: 'Potential null reference exception',
+          explanation: 'Are you checking if the object is null before accessing its members? Consider using null-conditional operator (?.) or null checks.'
+        });
+      }
+
+      // Missing using statement for IDisposable
+      if ((code.includes('new StreamReader') || code.includes('new FileStream')) && !code.includes('using')) {
+        issues.push({
+          type: 'style',
+          severity: 'medium',
+          line: code.split('\n').findIndex(l => l.includes('StreamReader') || l.includes('FileStream')) + 1,
+          message: 'Resource not properly disposed',
+          explanation: 'Use a using statement to ensure resources are properly disposed. This prevents resource leaks.'
+        });
+      }
+
+      // Catching generic Exception
+      if (code.includes('catch (Exception')) {
+        issues.push({
+          type: 'style',
+          severity: 'low',
+          line: code.split('\n').findIndex(l => l.includes('catch (Exception')) + 1,
+          message: 'Catching generic Exception',
+          explanation: 'Consider catching more specific exception types. This makes your error handling more precise and maintainable.'
+        });
+      }
+    }
+
   
     
     // If no specific issues found, provide general feedback
